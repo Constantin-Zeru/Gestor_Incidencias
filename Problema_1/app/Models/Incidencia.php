@@ -20,32 +20,15 @@ class Incidencia extends Model
      *
      * @var array
      */
-    protected $fillable = [
-        'titulo',
-        'descripcion',
-        'estado',
-        'cliente_id',
-        'empleado_id',
-        'creada_por'
-    ];
+   protected $fillable = [
+  'cliente_id','titulo','descripcion',
+  'contacto_nombre','contacto_telefono','contacto_email',
+  'direccion','poblacion','codigo_postal','provincia_codigo',
+  'estado','fecha_realizacion','anotaciones_anteriores',
+  'anotaciones_posteriores','fichero_resumen','empleado_id'
+];
 
-    /**
-     * Cliente al que pertenece la incidencia.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function cliente()
-    {
-        return $this->belongsTo(Cliente::class);
-    }
+public function cliente() { return $this->belongsTo(Cliente::class); }
+public function empleado() { return $this->belongsTo(Empleado::class,'empleado_id'); }
 
-    /**
-     * Empleado asignado (si existe).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function empleado()
-    {
-        return $this->belongsTo(Empleado::class);
-    }
 }
