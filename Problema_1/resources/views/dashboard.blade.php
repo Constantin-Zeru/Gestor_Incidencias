@@ -87,31 +87,7 @@
     </div>
   </div>
 
-  {{-- Acciones rápidas en tarjetas con botones --}}
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title mb-3">Acciones rápidas</h5>
 
-          <div class="d-flex flex-wrap gap-2">
-            @if(auth()->user()->tipo === 'admin')
-              <a href="{{ route('clientes.create') }}" class="btn btn-sm btn-primary">Nuevo cliente</a>
-              <a href="{{ route('clientes.index') }}" class="btn btn-sm btn-outline-primary">Listar clientes</a>
-              <a href="{{ route('cuotas.create') }}" class="btn btn-sm btn-primary">Nueva cuota</a>
-              <form class="d-inline" method="POST" action="{{ route('cuotas.generar') }}">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-warning">Generar remesa</button>
-              </form>
-              <a href="{{ route('incidencias.create') }}" class="btn btn-sm btn-outline-primary">Crear incidencia</a>
-            @else
-              <a href="{{ route('incidencias.mis') }}" class="btn btn-sm btn-primary">Ver mis incidencias</a>
-            @endif
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   {{-- Últimas incidencias --}}
   <div class="row">

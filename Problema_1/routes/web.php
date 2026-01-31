@@ -28,27 +28,21 @@ require __DIR__.'/auth.php';
 |--------------------------------------------------------------------------
 | Dashboard (protegido)
 |--------------------------------------------------------------------------
-|
-| Nota: si no usas verificación de email quita 'verified' o deja solo 'auth'.
-|
 */
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth'])->name('dashboard'); // <-- he quitado 'verified' para evitar bloqueos
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
 | Rutas protegidas por auth
 |--------------------------------------------------------------------------
 */
-
 Route::middleware('auth')->group(function () {
     // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // Rutas que dependen solo de auth pero no de rol específico pueden ir aquí
 });
 
 /*
@@ -57,13 +51,11 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth','rol:admin'])->group(function () {
-    // Incidencias (admin)
-    Route::get('/incidencias', [IncidenciaController::class,'index'])->name('incidencias.index');
-    Route::get('/incidencias/create', [IncidenciaController::class,'create'])->name('incidencias.create');
-    Route::post('/incidencias', [IncidenciaController::class,'store'])->name('incidencias.store');
+    // Incidencias (resource -> incluye edit/update/destroy/show/index/create/store)
+    Route::resource('incidencias', IncidenciaController::class);
 
     // Clientes (CRUD)
-    Route::resource('clientes', ClienteController::class)->except(['show']); // si no usas show
+    Route::resource('clientes', ClienteController::class)->except(['show']);
 
     // Cuotas (CRUD + acciones)
     Route::resource('cuotas', CuotaController::class);
@@ -87,8 +79,3 @@ Route::middleware(['auth','rol:admin'])->group(function () {
 Route::middleware(['auth','rol:operario'])->group(function () {
     Route::get('/mis-incidencias', [IncidenciaController::class,'misIncidencias'])->name('incidencias.mis');
 });
-
-
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth'])
-    ->name('dashboard');

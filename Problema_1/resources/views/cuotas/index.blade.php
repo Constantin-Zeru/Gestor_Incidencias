@@ -9,6 +9,7 @@
       @csrf
       <button class="btn btn-outline-secondary">Generar remesa mensual</button>
     </form>
+    <a href="{{ route('dashboard') }}" class="btn btn-secondary ms-2">Volver al panel</a>
   </div>
 </div>
 

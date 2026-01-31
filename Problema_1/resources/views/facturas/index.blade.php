@@ -3,6 +3,9 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Facturas</h2>
+   <div>
+    <a href="{{ route('dashboard') }}" class="btn btn-secondary">Volver al panel</a>
+  </div>
 </div>
 
 @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
