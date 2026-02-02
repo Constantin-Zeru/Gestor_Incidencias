@@ -22,11 +22,11 @@
     </div>
 
     <div class="mb-3">
-      <label class="form-label">Cliente (opcional)</label>
-      <select name="cliente_id" class="form-select">
-        <option value="">-- ninguno --</option>
+      <label class="form-label">Cliente</label>
+      <select name="cliente_id" class="form-select" required>
+        <option value="">-- seleccionar cliente --</option>
         @foreach($clientes as $c)
-          <option value="{{ $c->id }}" {{ old('cliente_id')==$c->id ? 'selected':'' }}>{{ $c->nombre }}</option>
+          <option value="{{ $c->id }}" {{ old('cliente_id')==$c->id ? 'selected':'' }}>{{ $c->nombre }} ({{ $c->cif }})</option>
         @endforeach
       </select>
     </div>
@@ -78,13 +78,25 @@
     </div>
 
     <div class="mb-3">
-      <label class="form-label">Fichero resumen</label>
-      <input name="fichero_resumen" type="file" class="form-control">
-      <div class="form-text">Máx 10MB. Solo accesible a admins y operario asignado.</div>
+      <label class="form-label">Operario asignado (opcional)</label>
+      <select name="empleado_id" class="form-select">
+        <option value="">-- ninguno --</option>
+        @foreach($empleados as $emp)
+          <option value="{{ $emp->id }}" {{ old('empleado_id') == $emp->id ? 'selected':'' }}>{{ $emp->nombre }}</option>
+        @endforeach
+      </select>
     </div>
 
-    <button class="btn btn-primary">Crear incidencia</button>
-    <a href="{{ route('incidencias.index') }}" class="btn btn-secondary ms-2">Volver</a>
+    <div class="mb-3">
+      <label class="form-label">Fichero resumen</label>
+      <input name="fichero_resumen" type="file" class="form-control">
+      <div class="form-text">Máx 10MB. Solo admins/operario asignado podrán descargarlo.</div>
+    </div>
+
+    <div class="d-grid">
+      <button class="btn btn-primary">Crear incidencia</button>
+      <a href="{{ route('incidencias.index') }}" class="btn btn-secondary mt-2">Volver</a>
+    </div>
   </form>
 </div>
 @endsection

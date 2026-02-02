@@ -32,7 +32,7 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{{ url('/') }}">Gestor De Incidencias</a>
+    <a class="navbar-brand" href="{{ url('/dashboard') }}">Gestor De Incidencias</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
       <span class="navbar-toggler-icon"></span>

@@ -8,6 +8,8 @@ use App\Models\Empleado;
 
 class Incidencia extends Model
 {
+    protected $table = 'incidencias';
+
     protected $fillable = [
         'titulo','descripcion','cliente_id','contacto_nombre','contacto_telefono',
         'contacto_email','direccion','poblacion','codigo_postal','provincia_codigo',
@@ -15,12 +17,20 @@ class Incidencia extends Model
         'fichero_resumen','empleado_id','creada_por'
     ];
 
-    // valores por defecto (doble protección)
+    // garantías de valores por defecto (doble protección)
     protected $attributes = [
-        'estado' => 'P',
-        'creada_por' => 'Sistema',
+        'estado' => 'pendiente',
+        'creada_por' => 'cliente',
     ];
 
-    public function cliente() { return $this->belongsTo(Cliente::class); }
-    public function empleado() { return $this->belongsTo(Empleado::class,'empleado_id'); }
+    // relaciones
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class);
+    }
+
+    public function empleado()
+    {
+        return $this->belongsTo(Empleado::class, 'empleado_id');
+    }
 }

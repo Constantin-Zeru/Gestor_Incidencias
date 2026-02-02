@@ -29,14 +29,11 @@ return [
     */
 
     'disks' => [
-
-        'local' => [
-            'driver' => 'local',
-            'root' => storage_path('app/private'),
-            'serve' => true,
-            'throw' => false,
-            'report' => false,
-        ],
+ 'incidencias' => [
+        'driver' => 'local',
+        'root' => storage_path('app/incidencias_ficheros'),
+        'visibility' => 'private',
+    ],
 
         'public' => [
             'driver' => 'local',

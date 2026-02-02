@@ -5,20 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Incidencia;
 use App\Models\Cliente;
+use App\Models\Empleado;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 
 class IncidenciaController extends Controller
 {
     public function __construct()
     {
+        // Public endpoints: publicCreateForm, publicStore
         $this->middleware('auth')->except(['publicCreateForm','publicStore']);
-        $this->middleware('rol:admin')->only(['create','store','edit','update','destroy','index','show']);
+        // Admin-only for most management actions (show is handled separately)
+        $this->middleware('rol:admin')->only(['create','store','edit','update','destroy','index','cambiarEstado']);
     }
 
     /**
-     * Index (admin)
+     * Index (admin) - listado con filtros
      */
     public function index(Request $request)
     {
@@ -39,27 +43,57 @@ class IncidenciaController extends Controller
         }
 
         $incidencias = $query->orderBy('created_at','desc')->paginate(20);
-        return view('incidencias.index', compact('incidencias'));
+        $provincias = $this->provincias();
+
+        return view('incidencias.index', compact('incidencias','provincias'));
     }
 
     /**
-     * Mostrar incidencia (opcional)
+     * Mostrar una incidencia (autenticado).
+     * Admin ve todo. Operario ve solo las suyas.
      */
     public function show(Incidencia $incidencia)
     {
-        return view('incidencias.show', compact('incidencia'));
+        $user = auth()->user();
+
+        if ($user->tipo === 'admin') {
+            return view('incidencias.show', compact('incidencia'));
+        }
+
+        if ($user->tipo === 'operario' && $incidencia->empleado_id == $user->id) {
+            return view('incidencias.show', compact('incidencia'));
+        }
+
+        abort(403, 'No tienes permiso para ver esta incidencia.');
     }
 
     /**
-     * Listado operario (mis incidencias)
+     * Listado operario (mis incidencias) - con los mismos filtros que index
      */
-    public function misIncidencias()
+    public function misIncidencias(Request $request)
     {
         $user = auth()->user();
-        $incidencias = Incidencia::where('empleado_id', $user->id)
-                        ->orderBy('created_at','desc')
-                        ->paginate(20);
-        return view('incidencias.index', compact('incidencias'));
+
+        $query = Incidencia::with('cliente','empleado')->where('empleado_id', $user->id);
+
+        if ($q = $request->input('q')) {
+            $query->where(function($qq) use ($q) {
+                $qq->where('titulo','like',"%$q%")
+                   ->orWhere('descripcion','like',"%$q%")
+                   ->orWhere('contacto_nombre','like',"%$q%");
+            });
+        }
+        if ($estado = $request->input('estado')) {
+            $query->where('estado', $estado);
+        }
+        if ($prov = $request->input('provincia')) {
+            $query->where('provincia_codigo', $prov);
+        }
+
+        $incidencias = $query->orderBy('created_at','desc')->paginate(20);
+        $provincias = $this->provincias();
+
+        return view('incidencias.index', compact('incidencias','provincias'));
     }
 
     /**
@@ -67,20 +101,23 @@ class IncidenciaController extends Controller
      */
     public function create()
     {
-        $provincias = method_exists($this,'provincias') ? $this->provincias() : \provincias_espana();
+        $provincias = $this->provincias();
         $clientes = Cliente::orderBy('nombre')->get();
-        return view('incidencias.create', compact('provincias','clientes'));
+        // Empleados tipo operario para mostrar en select
+        $empleados = Empleado::where('tipo','operario')->orderBy('nombre')->get();
+
+        return view('incidencias.create', compact('provincias','clientes','empleados'));
     }
 
     /**
-     * Store (admin)
+     * Store (admin) - guardar incidencia
      */
     public function store(Request $request)
     {
         $data = $request->validate([
             'titulo' => 'required|string|max:255',
             'descripcion' => 'required|string',
-            'cliente_id' => 'nullable|exists:clientes,id',
+            'cliente_id' => 'required|exists:clientes,id',
             'contacto_nombre' => 'required|string|max:255',
             'contacto_telefono' => ['required','string','max:30','regex:/^[0-9\-\+\s\(\)]{6,30}$/'],
             'contacto_email' => 'required|email',
@@ -94,12 +131,11 @@ class IncidenciaController extends Controller
             'estado' => 'nullable|string'
         ]);
 
-        // Garantizar estado por defecto
-        $data['estado'] = $request->input('estado', 'P');
+        // Mapear estados para cumplir CHECK de la tabla
+        $data['estado'] = $this->mapEstadoInput($request->input('estado', ''));
 
-        // Rellenar creada_por con usuario autenticado (nombre o email)
-        $user = auth()->user();
-        $data['creada_por'] = $user ? ($user->nombre ?? $user->email ?? 'Sistema') : 'Sistema';
+        // creada_por = 'admin' ya que viene de admin autenticado
+        $data['creada_por'] = 'admin';
 
         if (!empty($data['fecha_realizacion'])) {
             $fecha = Carbon::createFromFormat('d/m/Y', $data['fecha_realizacion']);
@@ -123,9 +159,11 @@ class IncidenciaController extends Controller
      */
     public function edit(Incidencia $incidencia)
     {
-        $provincias = method_exists($this,'provincias') ? $this->provincias() : \provincias_espana();
+        $provincias = $this->provincias();
         $clientes = Cliente::orderBy('nombre')->get();
-        return view('incidencias.edit', compact('incidencia','provincias','clientes'));
+        $empleados = Empleado::where('tipo','operario')->orderBy('nombre')->get();
+
+        return view('incidencias.edit', compact('incidencia','provincias','clientes','empleados'));
     }
 
     /**
@@ -146,11 +184,12 @@ class IncidenciaController extends Controller
             'fecha_realizacion' => ['nullable','date_format:d/m/Y'],
             'fichero_resumen' => 'nullable|file|max:10240',
             'empleado_id' => 'nullable|exists:empleados,id',
-            'estado' => 'nullable|string'
+            'estado' => 'nullable|string',
+            'cliente_id' => 'required|exists:clientes,id',
         ];
         $data = $request->validate($rules);
 
-        $data['estado'] = $request->input('estado', $incidencia->estado ?? 'P');
+        $data['estado'] = $this->mapEstadoInput($request->input('estado', $incidencia->estado ?? ''));
 
         if (!empty($data['fecha_realizacion'])) {
             $fecha = Carbon::createFromFormat('d/m/Y', $data['fecha_realizacion']);
@@ -172,7 +211,7 @@ class IncidenciaController extends Controller
     }
 
     /**
-     * Destroy
+     * Destroy (admin)
      */
     public function destroy(Incidencia $incidencia)
     {
@@ -184,41 +223,94 @@ class IncidenciaController extends Controller
     }
 
     /**
-     * Descargar fichero resumen
+     * Descargar fichero resumen (auth). El controller valida permisos.
      */
     public function downloadFichero($id)
     {
         $inc = Incidencia::findOrFail($id);
         $user = auth()->user();
+
         if (! ($user->tipo === 'admin' || ($user->tipo==='operario' && $inc->empleado_id == $user->id)) ) {
             abort(403);
         }
+
         if (! $inc->fichero_resumen || ! Storage::disk('local')->exists($inc->fichero_resumen)) {
             return back()->withErrors(['file'=>'Fichero no encontrado.']);
         }
-        return Storage::disk('local')->download($inc->fichero_resumen);
+
+        // Construir nombre de descarga amigable
+        $clienteName = optional($inc->cliente)->nombre ?? 'cliente';
+        $ext = pathinfo($inc->fichero_resumen, PATHINFO_EXTENSION) ?: 'dat';
+        $safeName = Str::slug($clienteName, '_');
+        $downloadName = "incidencia_{$inc->id}_{$safeName}.{$ext}";
+
+        return Storage::disk('local')->download($inc->fichero_resumen, $downloadName);
     }
 
     /**
-     * Formulario público (clientes sin login)
+     * Cambiar estado (admin)
+     */
+    public function cambiarEstado(Request $request, Incidencia $incidencia)
+    {
+        $request->validate(['estado' => 'required|string']);
+        $incidencia->estado = $this->mapEstadoInput($request->input('estado'));
+        $incidencia->save();
+
+        return redirect()->back()->with('success','Estado actualizado.');
+    }
+
+    /**
+     * Operario: completar tarea (añadir anotaciones posteriores y opcionalmente subir fichero)
+     */
+    public function completarTarea(Request $request, Incidencia $incidencia)
+    {
+        $user = auth()->user();
+        if ($user->tipo !== 'operario' || $incidencia->empleado_id != $user->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'anotaciones_posteriores' => 'nullable|string',
+            'fichero_resumen' => 'nullable|file|max:10240'
+        ]);
+
+        if ($request->hasFile('fichero_resumen')) {
+            if ($incidencia->fichero_resumen && Storage::disk('local')->exists($incidencia->fichero_resumen)) {
+                Storage::disk('local')->delete($incidencia->fichero_resumen);
+            }
+            $incidencia->fichero_resumen = $request->file('fichero_resumen')->store('incidencias_ficheros','local');
+        }
+
+        if (!empty($data['anotaciones_posteriores'])) {
+            $incidencia->anotaciones_posteriores = trim(($incidencia->anotaciones_posteriores ?? '') . "\n\n" . $data['anotaciones_posteriores']);
+        }
+
+        $incidencia->estado = 'finalizada';
+        $incidencia->save();
+
+        return redirect()->route('incidencias.mis')->with('success','Tarea marcada como completada.');
+    }
+
+    /**
+     * Formulario público para clientes (sin login)
      */
     public function publicCreateForm()
     {
-        $provincias = method_exists($this,'provincias') ? $this->provincias() : \provincias_espana();
+        $provincias = $this->provincias();
         return view('incidencias.public_create', compact('provincias'));
     }
 
     /**
-     * Guardar incidencia pública (clientes sin login)
+     * Guardar incidencia pública (cliente sin login)
+     * Valida el CIF + teléfono y crea incidencia asignada a ese cliente.
      */
     public function publicStore(Request $request)
     {
         $data = $request->validate([
+            'cif' => 'required|string',
+            'telefono' => 'required|string',
             'titulo' => 'required|string|max:255',
             'descripcion' => 'required|string',
-            'contacto_nombre' => 'required|string|max:255',
-            'contacto_telefono' => ['required','string','max:30','regex:/^[0-9\-\+\s\(\)]{6,30}$/'],
-            'contacto_email' => 'required|email',
             'direccion' => 'nullable|string|max:255',
             'poblacion' => 'nullable|string|max:100',
             'codigo_postal' => ['nullable','regex:/^\d{5}$/'],
@@ -227,20 +319,74 @@ class IncidenciaController extends Controller
             'fichero_resumen' => 'nullable|file|max:10240'
         ]);
 
-        // creada_por -> nombre del contacto o 'Cliente público'
-        $data['creada_por'] = $request->input('contacto_nombre', 'Cliente público');
-        $data['estado'] = 'P';
+        $normalizePhone = function($p) {
+            return preg_replace('/\D+/', '', $p);
+        };
 
-        if ($request->hasFile('fichero_resumen')) {
-            $data['fichero_resumen'] = $request->file('fichero_resumen')->store('incidencias_ficheros','local');
+        $cif = $request->input('cif');
+        $tel = $normalizePhone($request->input('telefono'));
+
+        $cliente = Cliente::where('cif', $cif)->get()->first(function($c) use ($tel, $normalizePhone) {
+            return $normalizePhone($c->telefono) === $tel;
+        });
+
+        if (! $cliente) {
+            return back()->withErrors(['cif' => 'CIF y teléfono no coinciden con ningún cliente registrado.'])->withInput();
         }
 
-        Incidencia::create($data);
+        $incData = [
+            'titulo' => $data['titulo'],
+            'descripcion' => $data['descripcion'],
+            'cliente_id' => $cliente->id,
+            'contacto_nombre' => $cliente->nombre,
+            'contacto_telefono' => $cliente->telefono,
+            'contacto_email' => $cliente->email,
+            'direccion' => $data['direccion'] ?? $cliente->direccion ?? null,
+            'poblacion' => $data['poblacion'] ?? null,
+            'codigo_postal' => $data['codigo_postal'] ?? null,
+            'provincia_codigo' => $data['provincia_codigo'] ?? null,
+            'creada_por' => 'cliente',
+            'estado' => 'pendiente'
+        ];
 
-        return redirect()->route('incidencias.public.create')->with('success','Incidencia enviada. Un administrador la revisará.');
+        if ($request->hasFile('fichero_resumen')) {
+            $incData['fichero_resumen'] = $request->file('fichero_resumen')->store('incidencias_ficheros','local');
+        }
+
+        Incidencia::create($incData);
+
+        // Redirige al home/login con mensaje (no al formulario de nuevo envío)
+        return redirect()->route('home')->with('success','Incidencia enviada. Un administrador la revisará.');
     }
 
-    // Helper provincias
+    /* --------------------
+     | Helper privado
+     * -------------------- */
+
+    /**
+     * Mapear entrada (P/A/EP/F o etiquetas) a los valores que exige CHECK en BD.
+     */
+    private function mapEstadoInput($input)
+    {
+        $map = [
+            'p' => 'pendiente',
+            'a' => 'asignada',
+            'ep' => 'en_proceso',
+            'f' => 'finalizada',
+            'pendiente' => 'pendiente',
+            'asignada' => 'asignada',
+            'en_proceso' => 'en_proceso',
+            'finalizada' => 'finalizada',
+        ];
+
+        $in = strtolower(trim((string)$input));
+        if ($in === '') return 'pendiente';
+        return $map[$in] ?? $in;
+    }
+
+    /**
+     * Provincias helper (puedes extraerlo a app/Helpers/provincias.php)
+     */
     private function provincias(): array
     {
         return [
