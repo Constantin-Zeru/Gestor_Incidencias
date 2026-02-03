@@ -58,14 +58,28 @@ class CuotaService
      * @param string|null $fechaPago
      * @return Cuota
      */
-    public function marcarPagada(int $cuotaId, ?string $fechaPago = null): Cuota
-    {
-        $cuota = Cuota::findOrFail($cuotaId);
-        $cuota->pagada = true;
-        $cuota->fecha_pago = $fechaPago ? Carbon::parse($fechaPago) : Carbon::now();
-        $cuota->save();
-        return $cuota;
+   public function marcarPagada(int $cuotaId, ?string $fechaPago = null): void
+{
+    $cuota = \App\Models\Cuota::findOrFail($cuotaId);
+
+    // marcar cuota
+    $cuota->update([
+        'pagada' => true,
+        'fecha_pago' => $fechaPago ? \Carbon\Carbon::parse($fechaPago) : now(),
+    ]);
+
+    $facturaService = app(\App\Services\FacturaService::class);
+
+    // crear factura si no existe
+    $factura = $cuota->factura;
+    if (! $factura) {
+        // genera factura sin enviar email (evita enviar correos automáticamente)
+        $factura = $facturaService->generarFacturaDesdeCuota($cuota->id, false);
     }
+
+    // marcar la factura como pagada (hace la conversión y guarda importe_euros)
+    $facturaService->marcarComoPagada($factura);
+}
 
     /**
      * Generar remesa mensual: crea una cuota por cada cliente usando cuota_mensual.

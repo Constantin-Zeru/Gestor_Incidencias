@@ -74,6 +74,9 @@ Route::middleware(['auth','rol:admin'])->group(function () {
         \Artisan::call('cuotas:generar');
         return redirect()->back()->with('success','Remesa generada.');
     })->name('cuotas.generar');
+    // Dentro del group de admin
+Route::post('/cuotas/{id}/factura', [FacturaController::class,'generarParaCuota'])->name('cuotas.factura');
+
 
     // Facturas
     Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');

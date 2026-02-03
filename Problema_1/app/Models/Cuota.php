@@ -27,8 +27,19 @@ class Cuota extends Model
         'importe',
         'pagada',
         'fecha_pago',
-        'notas'
+        'notas',
+        // nuevo
+        'moneda',
     ];
+
+     protected $casts = [
+        'importe' => 'decimal:2',
+        'pagada' => 'boolean',
+        'fecha_emision' => 'date',
+        'fecha_pago' => 'datetime',
+    ];
+
+
 
     /**
      * Cliente propietario de la cuota.

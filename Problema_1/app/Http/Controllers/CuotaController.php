@@ -34,13 +34,15 @@ class CuotaController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'cliente_id' => 'required|exists:clientes,id',
-            'concepto' => 'required|string|max:255',
-            'fecha_emision' => 'required|date',
-            'importe' => 'required|numeric',
-            'notas' => 'nullable|string'
-        ]);
-
+    'cliente_id' => 'required|exists:clientes,id',
+    'concepto' => 'required|string|max:255',
+    'fecha_emision' => 'required|date',
+    'importe' => 'required|numeric',
+    'notas' => 'nullable|string',
+    // moneda: ISO 3-letter, puedes ampliar la lista a las que necesites
+    'moneda' => 'nullable|string|size:3|in:EUR,USD,GBP,PLN,CZK',
+]);
+$data['moneda'] = $data['moneda'] ?? 'EUR';
         $this->svc->crear($data);
         return redirect()->route('cuotas.index')->with('success','Cuota creada.');
     }
@@ -53,15 +55,16 @@ class CuotaController extends Controller
 
     public function update(Request $request, Cuota $cuota)
     {
-        $data = $request->validate([
-            'cliente_id' => 'required|exists:clientes,id',
-            'concepto' => 'required|string|max:255',
-            'fecha_emision' => 'required|date',
-            'importe' => 'required|numeric',
-            'notas' => 'nullable|string',
-            'pagada' => 'nullable|boolean',
-            'fecha_pago' => 'nullable|date'
-        ]);
+       $data = $request->validate([
+    'cliente_id' => 'required|exists:clientes,id',
+    'concepto' => 'required|string|max:255',
+    'fecha_emision' => 'required|date',
+    'importe' => 'required|numeric',
+    'notas' => 'nullable|string',
+    'pagada' => 'nullable|boolean',
+    'fecha_pago' => 'nullable|date',
+    'moneda' => 'nullable|string|size:3|in:EUR,USD,GBP,PLN,CZK',
+]);
 
         $cuota->update($data);
         return redirect()->route('cuotas.index')->with('success','Cuota actualizada.');

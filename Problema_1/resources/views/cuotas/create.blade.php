@@ -36,6 +36,27 @@
   </div>
 
   <div class="mb-3">
+  <label class="form-label">Moneda</label>
+  <select name="moneda" class="form-select">
+    @php
+      $currencies = [
+        'EUR'=>'EUR - Euro',
+        'USD'=>'USD - Dólar',
+        'GBP'=>'GBP - Libra',
+        'PLN'=>'PLN - Zł',
+        'CZK'=>'CZK - Koruna'
+      ];
+    @endphp
+    @foreach($currencies as $code => $label)
+      <option value="{{ $code }}" {{ old('moneda', $cuota->moneda ?? 'EUR') == $code ? 'selected' : '' }}>
+        {{ $label }}
+      </option>
+    @endforeach
+  </select>
+</div>
+
+
+  <div class="mb-3">
     <label class="form-label">Notas</label>
     <textarea name="notas" class="form-control">{{ old('notas') }}</textarea>
   </div>

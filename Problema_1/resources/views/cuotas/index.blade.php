@@ -37,15 +37,24 @@
           </td>
           <td>{{ $c->fecha_emision }}</td>
           <td>
-            <a class="btn btn-sm btn-secondary" href="{{ route('cuotas.edit',$c) }}">Editar</a>
-            <form action="{{ route('cuotas.pagar', $c->id) }}" method="POST" style="display:inline">
-              @csrf
-              <button class="btn btn-sm btn-success">Marcar pagada</button>
-            </form>
-            <form action="{{ route('cuotas.destroy',$c) }}" method="POST" style="display:inline">
-              @csrf @method('DELETE')
-              <button class="btn btn-sm btn-danger">Borrar</button>
-            </form>
+    <a class="btn btn-sm btn-secondary" href="{{ route('cuotas.edit',$c) }}">Editar</a>
+
+    <form action="{{ route('cuotas.pagar', $c->id) }}" method="POST" style="display:inline">
+      @csrf
+      <button class="btn btn-sm btn-success">Marcar pagada</button>
+    </form>
+
+    @if(!$c->factura) {{-- solo mostrar si no existe factura --}}
+    <form action="{{ route('cuotas.factura', $c->id) }}" method="POST" style="display:inline">
+      @csrf
+      <button class="btn btn-sm btn-primary">Generar factura</button>
+    </form>
+    @endif
+
+    <form action="{{ route('cuotas.destroy',$c) }}" method="POST" style="display:inline">
+      @csrf @method('DELETE')
+      <button class="btn btn-sm btn-danger">Borrar</button>
+    </form>
           </td>
         </tr>
       @endforeach

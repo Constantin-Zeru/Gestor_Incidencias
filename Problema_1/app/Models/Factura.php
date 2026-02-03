@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Model;
  * Modelo que representa una factura generada.
  *
  * @author Constantin Zeru
- * @version 1.0
- * @date 2026-01-29
+ * @version 1.1
+ * @date 2026-02-03
  */
 class Factura extends Model
 {
@@ -24,11 +24,31 @@ class Factura extends Model
         'cuota_id',
         'numero_factura',
         'fecha',
-        'pdf_path'
+        'pdf_path',
+
+        // Nuevos campos Problema 3.1
+        'pagada',
+        'moneda',
+        'importe_euros',
+        'tipo_cambio',
+        'fecha_pago',
     ];
 
     /**
-     * Cuota asociada.
+     * Conversión automática de tipos.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'pagada' => 'boolean',
+        'fecha' => 'date',
+        'fecha_pago' => 'datetime',
+        'importe_euros' => 'decimal:2',
+        'tipo_cambio' => 'decimal:6',
+    ];
+
+    /**
+     * Cuota asociada a la factura.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
