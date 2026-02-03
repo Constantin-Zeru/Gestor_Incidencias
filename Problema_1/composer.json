@@ -11,8 +11,10 @@
   "require": {
     "php": "^8.2",
     "barryvdh/laravel-dompdf": "^3.1",
+    "giggsey/libphonenumber-for-php": "^9.0",
     "laravel/framework": "^12.0",
-    "laravel/tinker": "^2.10.1"
+    "laravel/tinker": "^2.10.1",
+    "propaganistas/laravel-phone": "^6.0"
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",
@@ -31,6 +33,7 @@
       "Database\\Seeders\\": "database/seeders/"
     },
     "files": [
+      "app/Helpers/normalizers.php",
       "app/Helpers/provincias.php"
     ]
   },

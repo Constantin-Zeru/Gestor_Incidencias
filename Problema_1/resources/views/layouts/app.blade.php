@@ -51,9 +51,6 @@
               <li class="dropdown-item-text small text-muted ps-3 pe-3">Conectado</li>
               <li><hr class="dropdown-divider"></li>
               <li>
-                <a class="dropdown-item" href="{{ route('profile.edit') }}">Mi perfil</a>
-              </li>
-              <li>
                 <form method="POST" action="{{ route('logout') }}">
                   @csrf
                   <button type="submit" class="dropdown-item">Salir</button>

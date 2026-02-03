@@ -7,11 +7,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
+use App\Models\Empleado; // o User, según tu modelo real
+use App\Models\User;
 
 class PasswordResetLinkController extends Controller
 {
     /**
-     * Display the password reset link request view.
+     * Mostrar formulario de recuperación
      */
     public function create(): View
     {
@@ -19,9 +21,7 @@ class PasswordResetLinkController extends Controller
     }
 
     /**
-     * Handle an incoming password reset link request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * Enviar enlace de recuperación SOLO a admins
      */
     public function store(Request $request): RedirectResponse
     {
@@ -29,16 +29,23 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
+        // Buscar usuario
+        $user = Empleado::where('email', $request->email)->first();
+
+        // Email no existe o no es admin
+        if (!$user || $user->tipo !== 'admin') {
+            return back()->withErrors([
+                'email' => 'Solo los administradores pueden recuperar la contraseña.',
+            ]);
+        }
+
+        // Enviar enlace
         $status = Password::sendResetLink(
             $request->only('email')
         );
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('status', __($status))
+            : back()->withErrors(['email' => __($status)]);
     }
 }

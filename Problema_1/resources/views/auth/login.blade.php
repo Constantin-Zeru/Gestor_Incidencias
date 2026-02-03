@@ -24,13 +24,21 @@
             <input id="password" type="password" name="password" required class="form-control">
           </div>
 
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="remember" id="remember">
-              <label class="form-check-label" for="remember">Recordarme</label>
-            </div>
-            <a href="#" class="small">¿Olvidaste la contraseña?</a>
-          </div>
+         <div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="remember" id="remember">
+    <label class="form-check-label" for="remember">Recordarme</label>
+  </div>
+
+  <a href="{{ route('password.request') }}" class="small">
+    ¿Olvidaste la contraseña?
+  </a>
+</div>
+
+<p class="small text-muted mt-2">
+  Recuperación de contraseña disponible solo para administradores.
+</p>
+
 
           <div class="d-grid">
             <button class="btn btn-primary">Entrar</button>

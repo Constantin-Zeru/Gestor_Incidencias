@@ -7,6 +7,7 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CuotaController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmpleadoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Descarga de fichero de incidencia (auth). El controlador valida permisos (admin/operario asignado).
+    // Descarga de fichero de incidencia (el controller valida permisos)
     Route::get('/incidencias/{id}/download', [IncidenciaController::class,'downloadFichero'])->name('incidencias.download');
 });
 
@@ -54,7 +55,7 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth','rol:admin'])->group(function () {
-    // Incidencias: todas las rutas resource EXCEPTO 'show' (show lo exponemos a auth general).
+    // Incidencias (todas las rutas resource excepto show, show está accesible a auth general)
     Route::resource('incidencias', IncidenciaController::class)->except(['show']);
 
     // cambiar estado
@@ -62,6 +63,9 @@ Route::middleware(['auth','rol:admin'])->group(function () {
 
     // Clientes (CRUD)
     Route::resource('clientes', ClienteController::class)->except(['show']);
+
+    // Empleados (gestión por UI)
+    Route::resource('empleados', EmpleadoController::class)->except(['show']);
 
     // Cuotas (CRUD + acciones)
     Route::resource('cuotas', CuotaController::class);
@@ -75,18 +79,13 @@ Route::middleware(['auth','rol:admin'])->group(function () {
     Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
     Route::get('/facturas/{id}/download', [FacturaController::class, 'download'])->name('facturas.download');
     Route::post('/cuotas/{id}/factura', [FacturaController::class,'generarParaCuota'])->name('cuotas.factura');
-
-    // dentro del group admin (ya tienes esto en tu file)
-Route::resource('empleados', \App\Http\Controllers\EmpleadoController::class)->except(['show']);
 });
 
 /*
 |--------------------------------------------------------------------------
 | Mostrar incidencia (autenticado)
 |--------------------------------------------------------------------------
-| Ruta accesible para usuarios autenticados; el controller decide si es admin
-| (ve todo) o operario (solo sus incidencias). Evita 403 para operarios
-| que deberían ver su tarea.
+| Usuarios autenticados pueden ver una incidencia; el controller controla permisos
 */
 Route::get('/incidencias/{incidencia}', [IncidenciaController::class,'show'])
     ->name('incidencias.show')
@@ -101,3 +100,8 @@ Route::middleware(['auth','rol:operario'])->group(function () {
     Route::get('/mis-incidencias', [IncidenciaController::class,'misIncidencias'])->name('incidencias.mis');
     Route::post('/incidencias/{incidencia}/completar', [IncidenciaController::class,'completarTarea'])->name('incidencias.completar');
 });
+// dentro del group de operario:
+Route::get('/operario/clientes', [\App\Http\Controllers\ClienteController::class, 'operarioIndex'])
+    ->name('clientes.operario.index')
+    ->middleware(['auth','rol:operario']);
+
