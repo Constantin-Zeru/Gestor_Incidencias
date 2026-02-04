@@ -9,6 +9,9 @@ use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmpleadoController;
 
+
+
+
 /*
 |--------------------------------------------------------------------------
 | Rutas públicas
@@ -34,6 +37,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('dashboard');
 
+
 /*
 |--------------------------------------------------------------------------
 | Rutas protegidas por auth
@@ -55,34 +59,34 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth','rol:admin'])->group(function () {
-    // Incidencias (todas las rutas resource excepto show, show está accesible a auth general)
-    Route::resource('incidencias', IncidenciaController::class)->except(['show']);
 
-    // cambiar estado
+    Route::resource('incidencias', IncidenciaController::class)->except(['show']);
     Route::post('/incidencias/{incidencia}/estado', [IncidenciaController::class,'cambiarEstado'])->name('incidencias.estado');
 
-    // Clientes (CRUD)
     Route::resource('clientes', ClienteController::class)->except(['show']);
-
-    // Empleados (gestión por UI)
     Route::resource('empleados', EmpleadoController::class)->except(['show']);
 
-    // Cuotas (CRUD + acciones)
+    // Cuotas
     Route::resource('cuotas', CuotaController::class);
     Route::post('cuotas/{id}/pagar', [CuotaController::class,'marcarPagada'])->name('cuotas.pagar');
+
     Route::post('cuotas/generar', function () {
         \Artisan::call('cuotas:generar');
         return redirect()->back()->with('success','Remesa generada.');
     })->name('cuotas.generar');
-    // Dentro del group de admin
-Route::post('/cuotas/{id}/factura', [FacturaController::class,'generarParaCuota'])->name('cuotas.factura');
 
 
     // Facturas
+    Route::post('/cuotas/{id}/factura', [FacturaController::class,'generarParaCuota'])
+        ->name('cuotas.factura');
+
     Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
     Route::get('/facturas/{id}/download', [FacturaController::class, 'download'])->name('facturas.download');
-    Route::post('/cuotas/{id}/factura', [FacturaController::class,'generarParaCuota'])->name('cuotas.factura');
+    Route::post('/facturas/{id}/pagar', [FacturaController::class,'marcarComoPagada'])
+    ->name('facturas.pagar');
+
 });
+
 
 /*
 |--------------------------------------------------------------------------

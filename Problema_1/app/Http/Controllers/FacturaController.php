@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Services\FacturaService;
@@ -15,21 +16,21 @@ class FacturaController extends Controller
         $this->svc = $svc;
     }
 
-    // existente
+    // generar factura para cuota (ruta post /cuotas/{id}/factura)
     public function generarParaCuota($id)
     {
         $factura = $this->svc->generarFacturaDesdeCuota($id, true);
         return redirect()->back()->with('success','Factura generada y enviada (si cliente tiene email).');
     }
 
-    // Nuevo: listado de facturas
+    // listado
     public function index()
     {
         $facturas = Factura::with('cuota.cliente')->orderBy('created_at','desc')->get();
         return view('facturas.index', compact('facturas'));
     }
 
-    // Nuevo: descargar PDF
+    // descargar PDF
     public function download($id)
     {
         $factura = Factura::findOrFail($id);

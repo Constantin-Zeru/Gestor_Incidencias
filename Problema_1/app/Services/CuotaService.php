@@ -58,7 +58,7 @@ class CuotaService
      * @param string|null $fechaPago
      * @return Cuota
      */
-   public function marcarPagada(int $cuotaId, ?string $fechaPago = null): void
+ public function marcarPagada(int $cuotaId, ?string $fechaPago = null): void
 {
     $cuota = \App\Models\Cuota::findOrFail($cuotaId);
 
@@ -69,17 +69,18 @@ class CuotaService
     ]);
 
     $facturaService = app(\App\Services\FacturaService::class);
+    $currencyService = app(\App\Services\CurrencyService::class);
 
     // crear factura si no existe
     $factura = $cuota->factura;
     if (! $factura) {
-        // genera factura sin enviar email (evita enviar correos automáticamente)
-        $factura = $facturaService->generarFacturaDesdeCuota($cuota->id, false);
+        $factura = $facturaService->generarFacturaDesdeCuota($cuota);
     }
 
-    // marcar la factura como pagada (hace la conversión y guarda importe_euros)
-    $facturaService->marcarComoPagada($factura);
+    // marcar la factura como pagada (calcula euros y regenera PDF)
+    $facturaService->marcarComoPagada($factura, $currencyService);
 }
+
 
     /**
      * Generar remesa mensual: crea una cuota por cada cliente usando cuota_mensual.

@@ -13,53 +13,66 @@
   </div>
 </div>
 
-@if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+@if(session('success'))
+  <div class="alert alert-success">{{ session('success') }}</div>
+@endif
 
 @if($cuotas->isEmpty())
   <div class="alert alert-info">No hay cuotas.</div>
 @else
-  <div class="table-responsive">
-    <table class="table table-hover align-middle">
-      <thead><tr><th>ID</th><th>Cliente</th><th>Concepto</th><th>Importe</th><th>Pagada</th><th>Fecha emisión</th><th></th></tr></thead>
-      <tbody>
-      @foreach($cuotas as $c)
-        <tr>
-          <td>{{ $c->id }}</td>
-          <td>{{ optional($c->cliente)->nombre }}</td>
-          <td>{{ $c->concepto }}</td>
-          <td>{{ number_format($c->importe,2) }}</td>
-          <td>
-            @if($c->pagada)
-              <span class="badge bg-success">Sí</span>
-            @else
-              <span class="badge bg-warning text-dark">No</span>
-            @endif
-          </td>
-          <td>{{ $c->fecha_emision }}</td>
-          <td>
+<div class="table-responsive">
+<table class="table table-hover align-middle">
+<thead>
+<tr>
+  <th>ID</th>
+  <th>Cliente</th>
+  <th>Concepto</th>
+  <th>Importe</th>
+  <th>Pagada</th>
+  <th>Fecha emisión</th>
+  <th>Acciones</th>
+</tr>
+</thead>
+<tbody>
+@foreach($cuotas as $c)
+<tr>
+  <td>{{ $c->id }}</td>
+  <td>{{ optional($c->cliente)->nombre }}</td>
+  <td>{{ $c->concepto }}</td>
+  <td>{{ number_format($c->importe,2) }} {{ $c->moneda }}</td>
+  <td>
+    @if($c->pagada)
+      <span class="badge bg-success">Sí</span>
+    @else
+      <span class="badge bg-warning text-dark">No</span>
+    @endif
+  </td>
+  <td>{{ $c->fecha_emision->format('d/m/Y') }}</td>
+  <td>
     <a class="btn btn-sm btn-secondary" href="{{ route('cuotas.edit',$c) }}">Editar</a>
 
+    @if(!$c->pagada)
     <form action="{{ route('cuotas.pagar', $c->id) }}" method="POST" style="display:inline">
       @csrf
       <button class="btn btn-sm btn-success">Marcar pagada</button>
     </form>
+    @endif
 
-    @if(!$c->factura) {{-- solo mostrar si no existe factura --}}
-    <form action="{{ route('cuotas.factura', $c->id) }}" method="POST" style="display:inline">
-      @csrf
-      <button class="btn btn-sm btn-primary">Generar factura</button>
-    </form>
+    {{-- Generar factura SOLO si no existe --}}
+    @if($c->factura)
+      <a href="{{ route('facturas.download', $c->factura->id) }}" class="btn btn-sm btn-outline-primary">Descargar factura</a>
     @endif
 
     <form action="{{ route('cuotas.destroy',$c) }}" method="POST" style="display:inline">
-      @csrf @method('DELETE')
+      @csrf
+      @method('DELETE')
       <button class="btn btn-sm btn-danger">Borrar</button>
     </form>
-          </td>
-        </tr>
-      @endforeach
-      </tbody>
-    </table>
-  </div>
+  </td>
+</tr>
+@endforeach
+</tbody>
+</table>
+</div>
 @endif
 @endsection
